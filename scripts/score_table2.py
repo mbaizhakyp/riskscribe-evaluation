@@ -525,14 +525,11 @@ def fill_docx(summary: dict) -> None:
             if not row.cells[4].text.strip():
                 row.cells[4].text = "—"
 
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     out_docx = OUT_DIR / "RiskScribe_Final_Score_Tables_filled.docx"
     doc.save(str(out_docx))
-    # also overwrite main file with backup first
-    backup = ROOT / "archive" / "RiskScribe_Final_Score_Tables.backup.docx"
-    if not backup.exists():
-        backup.write_bytes(DOCX_PATH.read_bytes())
     doc.save(str(DOCX_PATH))
-    print(f"Filled Table 2 in {DOCX_PATH} (backup: {backup.name})", flush=True)
+    print(f"Filled Table 2 in {DOCX_PATH}", flush=True)
     print(f"Copy also at {out_docx}", flush=True)
 
 

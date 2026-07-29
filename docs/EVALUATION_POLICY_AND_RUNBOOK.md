@@ -1,14 +1,14 @@
-# RiskScribe Evaluation Policy & Runbook (Blueprint)
+# RiskScribe Evaluation Policy & Runbook
 
-Public evaluation blueprint: **policy**, **metrics**, **code**, **prompts**, and **reproduction steps**.  
-It does **not** ship study data or images. Bring your own generated results and gold registries (local `data/` — see `docs/DATA_LAYOUT.md`).
+This document is the evaluation **policy**, **metric definitions**, and **reproduction steps** for the public blueprint.  
+It does not include study data. Researchers supply their own images and gold registries.
 
 ---
 
 ## 1. Goals
 
-1. Optionally generate baseline infographics with GPT-Image / Code Interpreter under fair shared inputs  
-2. Score systems on **Table 1** (complex data fidelity + presentation)  
+1. Optionally generate baseline infographics (GPT-Image / Code Interpreter) under fair shared inputs  
+2. Score systems on **Table 1** (complex-data fidelity and presentation quality)  
 3. Score reverse-engineered posters on **Table 2** (vs an original anchor)  
 
 ---
@@ -19,44 +19,91 @@ It does **not** ship study data or images. Bring your own generated results and 
 
 | Metric | Scale | Method |
 |--------|-------|--------|
-| FFR ↑ | 0–1 | VLM transcribes visible numbers → match gold in `immutable_registry.json` |
-| HR ↓ | 0–1 | `1 − FFR` |
+| Fact-Fidelity Rate (FFR) ↑ | 0–1 | VLM transcribes visible numbers → match gold in `immutable_registry.json` |
+| Hallucination Rate (HR) ↓ | 0–1 | `HR = 1 − FFR` |
 | Numeric accuracy ↑ | 0–1 | same match rate as FFR |
 | Expert appropriateness ↑ | 1–5 | human chart-fit (recommended for papers) |
 | Layout validity ↑ | pass-rate % | VLM checklist |
 | Story completeness ↑ | 0–5 mean | location, time, quantity, guidance, source |
-| Aesthetic quality ↑ | 1–5 mean | VLM; median of 3 passes |
+| Aesthetic quality ↑ | 1–5 mean | VLM absolute rating; median of 3 passes |
 
-**FFR tolerance:** abs ≤ 0.05 if |gold| < 100 else relative ≤ 0.5%.
+**FFR matching tolerance:** absolute error ≤ 0.05 if \|gold\| < 100; else relative error ≤ 0.5%.  
+Gold values: numeric fields in `data_targets.*.records`, plus fact `value` and `numeric_tokens` in `fact_packet`.
 
-**Fair comparison for baselines:** shared `results/table1/inputs/` packs; attempt budget 3; portrait canvas; no cherry-picking.
+**Fair comparison (baselines):** identical requirement + data + knowledge packs per case; attempt budget 3; portrait canvas; first success kept (no aesthetic cherry-picking).
 
 ### Table 2 — vs original
 
 | Metric | Scale | Method |
 |--------|-------|--------|
-| Layout validity | pass-rate % | VLM on generated |
+| Layout validity | pass-rate % | VLM checklist on generated image |
 | Element coverage | 0–1 mean | original elements present in generated? |
-| Aesthetics W/T/L | % | pairwise (prefer ties when close) |
-| Readability W/T/L | % | pairwise |
-| Referenced scores | 0–100 | `(100×wins + 50×ties) / N` (50 = parity) |
+| Aesthetics win / tie / loss | % | blinded pairwise (prefer **tie** when close) |
+| Readability win / tie / loss | % | blinded pairwise |
+| Referenced scores | 0–100 | \((100 N_{\mathrm{win}} + 50 N_{\mathrm{tie}}) / N\) |
+
+**50 = parity** with the original. See `docs/Aesthetics_referenced_score.png`.
+
+### Automation limits
+
+VLM FFR may count chart axis ticks as data; gold lists may omit valid subtype counts.  
+Pairwise judges may under-use ties. Document human adjudication when used.
 
 ---
 
-## 3. Repository map
+## 3. Local data layout (not shipped)
+
+### Table 1 — `data/table1/<case_id>/`
+
+| File | Role |
+|------|------|
+| `requirement.txt` | Task brief (for generation) |
+| `immutable_registry.json` | Gold numbers (for FFR) |
+| `infographic_decoration.png` | Output image to score |
+
+**Minimal gold registry:**
+
+```json
+{
+  "data_targets": {
+    "my_table": {
+      "records": [{ "field_a": 1.23, "field_b": 4.56 }]
+    }
+  },
+  "fact_packet": {
+    "facts": [
+      {
+        "fact_id": "kpi.total",
+        "display": "Total: 5.79",
+        "value": 5.79,
+        "unit": null,
+        "numeric_tokens": ["5.79"]
+      }
+    ]
+  }
+}
+```
+
+Optional baseline images:
 
 ```text
-riskscribe_evaluation/
-├── README.md
-├── config/                 # optional case-list override
-├── docs/                   # policy, data layout, prompts, protocol
-├── scripts/                # build / generate / score
-└── results/                # notes; outputs created when you run scripts
-
-# Created locally by you (not shipped):
-data/table1/<case>/         # requirement, registry, decoration.png
-data/table2/<case>/         # original_preview.png, decoration.png
+results/table1/generations/<case_id>/<system>/<case_id>_<system>.png
 ```
+
+`system` ∈ `gpt_img_1_5` | `gpt_img_2` | `ci_sol` | `ci_luna` | `riskscribe`
+
+### Table 2 — `data/table2/<case_id>/`
+
+| File | Role |
+|------|------|
+| `original_preview.png` | Reference / original |
+| `infographic_decoration.png` | Generated remake |
+| `requirement.txt` | Optional brief |
+
+### Discovery
+
+- Table 1: every `data/table1/*/` containing `immutable_registry.json`, or restrict with optional `config/table1_cases.json` (JSON list of IDs).  
+- Table 2: every `data/table2/*/` containing both PNGs.
 
 ---
 
@@ -64,24 +111,26 @@ data/table2/<case>/         # original_preview.png, decoration.png
 
 | Script | Role |
 |--------|------|
-| `scripts/build_table1_inputs.py` | Registry → data/knowledge packs (no LLM) |
+| `scripts/build_table1_inputs.py` | Registry → fair data/knowledge packs (no LLM) |
 | `scripts/generate_table1_baselines.py` | GPT-Image + Code Interpreter generators |
-| `scripts/score_table1.py` | Table 1 metrics |
-| `scripts/score_table1_expert.py` | Optional VLM expert proxy |
-| `scripts/score_table2.py` | Table 2 metrics |
+| `scripts/score_table1.py` | Table 1 automated metrics |
+| `scripts/score_table1_expert.py` | Optional dual VLM expert-proxy ratings |
+| `scripts/score_table2.py` | Table 2 layout, coverage, pairwise scores |
 
-Prompts: `docs/PROMPTS.md`. Case file layout: `docs/DATA_LAYOUT.md`.
+Prompts used by these scripts: **`docs/PROMPTS.md`**.
+
+Judge models default to `gpt-4o` (`TABLE1_VLM_MODEL` / `TABLE2_VLM_MODEL`).
 
 ---
 
-## 5. Step-by-step
+## 5. Reproduction steps
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export OPENAI_API_KEY=sk-...
 
-# After placing your cases under data/ (see DATA_LAYOUT.md):
+# After placing your cases under data/:
 python scripts/build_table1_inputs.py          # optional
 python scripts/generate_table1_baselines.py    # optional
 python scripts/score_table1.py
@@ -92,23 +141,17 @@ Filters:
 
 ```bash
 ONLY_CASES=my_case ONLY_SYSTEMS=gpt_img_2,ci_sol python scripts/generate_table1_baselines.py
-TABLE1_VLM_MODEL=gpt-4o TABLE2_VLM_MODEL=gpt-4o python scripts/score_table1.py
 ```
+
+Run outputs go under local `results/` (not part of this public package).
 
 ---
 
 ## 6. Compliance checklist
 
-- [ ] No private/real sensitive data committed to a public fork  
-- [ ] Gold registries match the data shown to generators  
-- [ ] Attempt budget ≤ 3 when generating baselines  
-- [ ] Human expert ratings used for publication when required  
-- [ ] Table 2 ties used when neither image is clearly better  
+- [ ] No private study data committed to a public fork  
+- [ ] Gold registries match generator inputs  
+- [ ] Baseline attempt budget ≤ 3  
+- [ ] Prefer human expert ratings for publication  
+- [ ] Use ties in pairwise metrics when appropriate  
 - [ ] API keys never committed  
-
----
-
-## 7. Limitations of automation
-
-VLM FFR can over-count chart axis ticks; gold lists can omit valid subtype counts.  
-Pairwise judges may under-use ties. Document any human adjudication.

@@ -624,10 +624,6 @@ def fill_docx(summary: dict) -> None:
     if not DOCX_PATH.exists():
         print("DOCX missing; skip fill")
         return
-    # backup once if not present from table2 era
-    backup = ROOT / "archive" / "RiskScribe_Final_Score_Tables.backup_pre_table1.docx"
-    if not backup.exists():
-        backup.write_bytes(DOCX_PATH.read_bytes())
 
     doc = Document(str(DOCX_PATH))
     if not doc.tables:

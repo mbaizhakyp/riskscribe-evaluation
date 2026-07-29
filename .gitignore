@@ -1,15 +1,21 @@
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-.DS_Store
+# Secrets
 api_keys.txt
 .env
 .env.*
 
-# Local BYO evaluation data and run outputs (never commit study data)
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local BYO evaluation data and run outputs (do not publish)
 data/
-results/table1/
-results/table2/
-results/*.docx
-release/
+results/
+config/table1_cases.json

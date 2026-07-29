@@ -314,6 +314,9 @@ def aggregate(records: list[dict]) -> dict:
 def fill_docx(summary: dict) -> None:
     from docx import Document
 
+    if not DOCX.exists():
+        print("DOCX missing; skip fill")
+        return
     doc = Document(str(DOCX))
     t = doc.tables[0]
     header = [c.text.strip() for c in t.rows[0].cells]
