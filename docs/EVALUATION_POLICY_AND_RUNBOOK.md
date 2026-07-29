@@ -1,17 +1,15 @@
 # RiskScribe Evaluation Policy & Runbook (Blueprint)
 
-This is the **public** evaluation blueprint: policy, metrics, code, prompts, and reproduction steps.
-It does **not** ship raw study data. Bring your own generated images and gold registries.
+Public evaluation blueprint: **policy**, **metrics**, **code**, **prompts**, and **reproduction steps**.  
+It does **not** ship study data or images. Bring your own generated results and gold registries (local `data/` — see `docs/DATA_LAYOUT.md`).
 
 ---
 
 ## 1. Goals
 
-Provide a reproducible framework so researchers can:
-
-1. Generate baseline infographics (optional) with GPT-Image / Code Interpreter under fair inputs
-2. Score systems on **Table 1** (complex data fidelity + presentation)
-3. Score reverse-engineered posters on **Table 2** (vs an original anchor)
+1. Optionally generate baseline infographics with GPT-Image / Code Interpreter under fair shared inputs  
+2. Score systems on **Table 1** (complex data fidelity + presentation)  
+3. Score reverse-engineered posters on **Table 2** (vs an original anchor)  
 
 ---
 
@@ -48,15 +46,16 @@ Provide a reproducible framework so researchers can:
 ## 3. Repository map
 
 ```text
-riskscribe_evaluation_blueprint/
+riskscribe_evaluation/
 ├── README.md
-├── config/table1_cases.json
-├── docs/          # policy, prompts, protocol, formula figure
-├── scripts/       # build / generate / score
-├── data/
-│   ├── table1/<case>/   # requirement, registry, decoration.png
-│   └── table2/<case>/   # original_preview.png, decoration.png
-└── results/       # written by scripts
+├── config/                 # optional case-list override
+├── docs/                   # policy, data layout, prompts, protocol
+├── scripts/                # build / generate / score
+└── results/                # notes; outputs created when you run scripts
+
+# Created locally by you (not shipped):
+data/table1/<case>/         # requirement, registry, decoration.png
+data/table2/<case>/         # original_preview.png, decoration.png
 ```
 
 ---
@@ -71,7 +70,7 @@ riskscribe_evaluation_blueprint/
 | `scripts/score_table1_expert.py` | Optional VLM expert proxy |
 | `scripts/score_table2.py` | Table 2 metrics |
 
-Prompts: `docs/PROMPTS.md` (exported from scripts).
+Prompts: `docs/PROMPTS.md`. Case file layout: `docs/DATA_LAYOUT.md`.
 
 ---
 
@@ -79,14 +78,12 @@ Prompts: `docs/PROMPTS.md` (exported from scripts).
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install openai pillow python-docx
+pip install -r requirements.txt
 export OPENAI_API_KEY=sk-...
 
-# Optional: build fair packs + generate baselines for your cases
-python scripts/build_table1_inputs.py
-python scripts/generate_table1_baselines.py
-
-# Score
+# After placing your cases under data/ (see DATA_LAYOUT.md):
+python scripts/build_table1_inputs.py          # optional
+python scripts/generate_table1_baselines.py    # optional
 python scripts/score_table1.py
 python scripts/score_table2.py
 ```
@@ -94,53 +91,24 @@ python scripts/score_table2.py
 Filters:
 
 ```bash
-ONLY_CASES=example_case ONLY_SYSTEMS=gpt_img_2,ci_sol python scripts/generate_table1_baselines.py
+ONLY_CASES=my_case ONLY_SYSTEMS=gpt_img_2,ci_sol python scripts/generate_table1_baselines.py
 TABLE1_VLM_MODEL=gpt-4o TABLE2_VLM_MODEL=gpt-4o python scripts/score_table1.py
 ```
 
 ---
 
-## 6. Gold registry schema (minimal)
+## 6. Compliance checklist
 
-```json
-{
-  "data_targets": {
-    "my_table": {
-      "records": [
-        {"field_a": 1.23, "field_b": 4.56}
-      ]
-    }
-  },
-  "fact_packet": {
-    "facts": [
-      {
-        "fact_id": "kpi.total",
-        "display": "Total: 5.79",
-        "value": 5.79,
-        "unit": null,
-        "numeric_tokens": ["5.79"]
-      }
-    ]
-  }
-}
-```
-
-All numeric fields in `records` and fact `value` / `numeric_tokens` become FFR gold.
+- [ ] No private/real sensitive data committed to a public fork  
+- [ ] Gold registries match the data shown to generators  
+- [ ] Attempt budget ≤ 3 when generating baselines  
+- [ ] Human expert ratings used for publication when required  
+- [ ] Table 2 ties used when neither image is clearly better  
+- [ ] API keys never committed  
 
 ---
 
-## 7. Compliance checklist
+## 7. Limitations of automation
 
-- [ ] No private/real sensitive data committed to a public fork of this blueprint
-- [ ] Gold registries match the data shown to generators
-- [ ] Attempt budget ≤ 3 when generating baselines
-- [ ] Human expert ratings used for publication when required
-- [ ] Table 2 ties used when neither image is clearly better
-- [ ] API keys never committed
-
----
-
-## 8. Limitations of automation
-
-VLM FFR can over-count chart axis ticks; gold lists can omit valid subtype counts.
+VLM FFR can over-count chart axis ticks; gold lists can omit valid subtype counts.  
 Pairwise judges may under-use ties. Document any human adjudication.

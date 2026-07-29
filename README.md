@@ -1,13 +1,11 @@
 # RiskScribe Evaluation Blueprint
 
-**Public evaluation framework only** — no raw study data, no real case images, no filled private results.
+**Public evaluation framework only** — no study data, no case images, no filled private results.
 
 Use this package to:
-1. Understand the RiskScribe evaluation **policy** and metrics
-2. Follow **reproduction steps** for scoring
-3. Run the same **code** and **prompts** on **your own** generated infographics
-
-If you already have generated images + gold facts, you can score them without using our private corpus.
+1. Understand the RiskScribe evaluation **policy** and metrics  
+2. Follow **reproduction steps** for scoring  
+3. Run the same **code** and **prompts** on **your own** generated infographics  
 
 ---
 
@@ -16,16 +14,15 @@ If you already have generated images + gold facts, you can score them without us
 | Path | Contents |
 |------|----------|
 | `docs/EVALUATION_POLICY_AND_RUNBOOK.md` | Policy, metrics, formulas, run steps |
+| `docs/DATA_LAYOUT.md` | How to place your own cases (local `data/`) |
 | `docs/PROMPTS.md` | Exported generation + judge prompts |
 | `docs/RiskScribe_Evaluation_Protocol.docx` | Protocol document |
 | `docs/Aesthetics_referenced_score.png` | Referenced-score formula figure |
 | `scripts/` | Input builder, baseline generators, scorers |
-| `config/` | Optional case list |
-| `data/table1/example_case/` | **Synthetic** Table 1 layout demo |
-| `data/table2/example_poster/` | **Synthetic** Table 2 layout demo |
-| `results/` | Empty output tree (created by runs) |
+| `config/` | Optional Table 1 case-list override |
+| `results/` | Notes only; score outputs are created at run time |
 
-**Not included:** real RiskScribe study cases, agency originals, registries with real hazard data, baseline study outputs, or final private score tables.
+**Not included:** evaluation cases, registries, images, or study scores. Create a local `data/` tree when you are ready to run (see `docs/DATA_LAYOUT.md`).
 
 ---
 
@@ -34,20 +31,18 @@ If you already have generated images + gold facts, you can score them without us
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install openai pillow python-docx
+pip install -r requirements.txt
 export OPENAI_API_KEY=sk-...   # required for VLM judges / generators
 ```
 
 ### Table 1 — complex-data fidelity / quality
 
-1. Add a case under `data/table1/<case_id>/`:
+1. Add cases under `data/table1/<case_id>/` (see `docs/DATA_LAYOUT.md`):
    - `requirement.txt`
-   - `immutable_registry.json` (gold numbers — see example)
+   - `immutable_registry.json` (gold numbers)
    - `infographic_decoration.png` (your system output)
-2. Optionally put baseline PNGs at  
-   `results/table1/generations/<case_id>/<system>/<case_id>_<system>.png`  
-   with `system` ∈ `gpt_img_1_5`, `gpt_img_2`, `ci_sol`, `ci_luna`, `riskscribe`  
-   (or only score `riskscribe` by providing decoration + registry).
+2. Optionally add baseline PNGs under  
+   `results/table1/generations/<case_id>/<system>/`
 3. Run:
 
 ```bash
@@ -70,7 +65,7 @@ python scripts/score_table2.py
 ```bash
 python scripts/build_table1_inputs.py
 python scripts/generate_table1_baselines.py
-# ONLY_CASES=example_case ONLY_SYSTEMS=gpt_img_2 python scripts/generate_table1_baselines.py
+# ONLY_CASES=my_case ONLY_SYSTEMS=gpt_img_2,ci_sol python scripts/generate_table1_baselines.py
 ```
 
 ---
@@ -95,10 +90,4 @@ Full definitions: `docs/EVALUATION_POLICY_AND_RUNBOOK.md`.
 | `ci_sol` | gpt-5.6-sol + code_interpreter |
 | `ci_luna` | gpt-5.6-luna + code_interpreter |
 
-Your own system only needs images in the paths above; it does not need to be re-implemented here.
-
----
-
-## License / data notice
-
-Synthetic placeholders in `data/` are **not** scientific results. Do not treat example numbers or placeholder graphics as evaluation evidence.
+Your own system only needs images on the paths above; it does not need to be re-implemented here.

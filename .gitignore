@@ -1,4 +1,3 @@
-
 .venv/
 venv/
 __pycache__/
@@ -7,10 +6,10 @@ __pycache__/
 api_keys.txt
 .env
 .env.*
-results/table1/per_case_system_results.*
-results/table1/aggregate_summary.json
-results/table1/generations/
-results/table1/inputs/
-results/table2/per_case_results.*
-results/table2/aggregate_summary.json
+
+# Local BYO evaluation data and run outputs (never commit study data)
+data/
+results/table1/
+results/table2/
 results/*.docx
+release/
